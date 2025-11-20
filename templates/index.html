@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>See Your Future</title>
+  <meta name="description" content="See Your Future — generative AI entertainment + self-reflection web app proposal and system overview." />
+  <style>
+    /* Simple, modern styling. Keep this file standalone for quick previews. */
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#9aa7b5;
+      --accent:#7c5cff;
+      --glass: rgba(255,255,255,0.02);
+      --glass-2: rgba(255,255,255,0.03);
+      --radius:12px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,#071024 0%, #07182a 50%, #04111a 100%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.5;
+      padding:24px;
+    }
+
+    .container{max-width:1060px;margin:0 auto}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5bd1ff);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:#04111a;box-shadow:0 6px 18px rgba(0,0,0,0.6)
+    }
+    h1{font-size:22px;margin:0}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:14px}
+
+    nav.top-actions{display:flex;gap:8px;align-items:center}
+    .btn{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      padding:8px 12px;border-radius:10px;color:var(--muted);font-weight:600;font-size:13px;
+      cursor:pointer;
+    }
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#5bd1ff);color:#04111a;border:none;box-shadow:0 8px 30px rgba(124,92,255,0.18)}
+
+    main{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+    @media (max-width:980px){ main{grid-template-columns:1fr} }
+
+    /* Card */
+    .card{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:0 8px 30px rgba(3,6,12,0.6);border:1px solid var(--glass-2)}
+    .section-title{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .section-title h2{font-size:16px;margin:0}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* Feature grid */
+    .features{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    @media (max-width:700px){ .features{grid-template-columns:1fr} }
+
+    .feature{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+    .feature h3{margin:0 0 6px;font-size:14px}
+    .feature p{margin:0;color:var(--muted);font-size:13px}
+
+    /* GAITs */
+    .gaits{display:flex;flex-direction:column;gap:10px}
+    .gait{display:flex;gap:12px;align-items:center;padding:10px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.02)}
+    .gait .icon{width:48px;height:48;display:grid;place-items:center;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
+    .gait h4{margin:0;font-size:14px}
+    .gait p{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+    /* Diagram area */
+    .diagram-wrap{overflow:auto;padding:6px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border-radius:10px}
+    svg.flow{width:100%;height:auto;min-height:360px}
+
+    /* Accordion / Brainstorm */
+    .accordion{display:flex;flex-direction:column;gap:8px}
+    .acc-item{border-radius:8px;background:var(--glass);padding:8px;border:1px solid rgba(255,255,255,0.02)}
+    .acc-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+    .acc-body{margin-top:8px;color:var(--muted);font-size:13px;display:none}
+    .acc-body.show{display:block}
+
+    /* Footer */
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* score bar mock */
+    .score-bar{height:12px;background:rgba(255,255,255,0.04);border-radius:9px;overflow:hidden}
+    .score-fill{height:100%;background:linear-gradient(90deg,#6df 0%, #7c5cff 100%);width:0}
+
+    /* small helpers */
+    .small{font-size:13px;color:var(--muted)}
+    .kbd{font-family:monospace;background:rgba(255,255,255,0.02);padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.02)}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">SYF</div>
+        <div>
+          <h1>See Your Future — Project Proposal</h1>
+          <p class="lead">Generative AI experience for multi-round self-reflection (entertainment, not prediction).</p>
+        </div>
+      </div>
+
+      <nav class="top-actions" aria-label="Top actions">
+        <button class="btn" onclick="scrollToSection('overview')">Overview</button>
+        <button class="btn" onclick="scrollToSection('diagram')">System Diagram</button>
+        <button class="btn primary" onclick="alert('This triggers the prototype flow (placeholder).')">Prototype Demo</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Left / main content -->
+      <section>
+        <article class="card" id="overview" aria-labelledby="overview-title">
+          <div class="section-title">
+            <h2 id="overview-title">Motivation & Project Idea</h2>
+            <span class="small muted">Entertainment + reflection</span>
+          </div>
+
+          <p><strong>Motivation:</strong> People enjoy interactive self-reflection that blends personalization, creativity, and entertainment. See Your Future builds a richer, multi-round “future snapshot” using generative AI (language, image, audio).</p>
+
+          <h3 style="margin-top:14px">Experience flow</h3>
+          <ol class="muted" style="padding-left:18px">
+            <li><strong>Round 1 — Baseline Intake:</strong> selfie + optional resume/photos, baseline questionnaire.</li>
+            <li><strong>Round 2 — AI-refined questions:</strong> LLM (ChatGPT) generates personalized follow-ups; user answers.</li>
+            <li><strong>Generation:</strong> narrative, 0–100 future quality score, AI image, audio narration, habit suggestions, and an improved future.</li>
+          </ol>
+
+          <div style="margin-top:14px" class="features">
+            <div class="feature">
+              <h3>Personalized follow-ups</h3>
+              <p>ChatGPT generates targeted refining questions to improve specificity and relevance of the profile.</p>
+            </div>
+            <div class="feature">
+              <h3>Multi-modal outputs</h3>
+              <p>Text narrative, score visualization, generated image (SDXL), and TTS audio (ElevenLabs).</p>
+            </div>
+            <div class="feature">
+              <h3>Improved future loop</h3>
+              <p>LLM suggests habit changes then regenerates an improved narrative, score, and image to show contrast.</p>
+            </div>
+            <div class="feature">
+              <h3>Clearly framed</h3>
+              <p>Always labeled as entertainment and self-reflection to reduce misinterpretation as deterministic prediction.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" style="margin-top:16px" id="gaits" aria-labelledby="gaits-title">
+          <div class="section-title">
+            <h2 id="gaits-title">Generative AI Tools (GAITs)</h2>
+            <span class="muted">language, image, audio</span>
+          </div>
+
+          <div class="gaits">
+            <div class="gait">
+              <div class="icon">✦</div>
+              <div>
+                <h4>ChatGPT (GPT-4o / 4o mini)</h4>
+                <p>Refining questions, profile builder, narrative & scoring, habit suggestions, improved future logic.</p>
+              </div>
+            </div>
+
+            <div class="gait">
+              <div class="icon">🖼️</div>
+              <div>
+                <h4>Stable Diffusion XL (Clipdrop)</h4>
+                <p>Creates future and improved images using selfie + narrative-driven visual prompts.</p>
+              </div>
+            </div>
+
+            <div class="gait">
+              <div class="icon">🔊</div>
+              <div>
+                <h4>ElevenLabs TTS</h4>
+                <p>Generates two audio narrations (original + improved). Voice/tone chosen from score ranges.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" style="margin-top:16px" id="brainstorm" aria-labelledby="brain-title">
+          <div class="section-title">
+            <h2 id="brain-title">Preliminary Brainstorming</h2>
+            <span class="muted">ideas & optional features</span>
+          </div>
+
+          <div class="accordion">
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(event)">
+                <strong>Core features</strong>
+                <span class="small muted">click to expand</span>
+              </div>
+              <div class="acc-body">
+                <ul class="muted">
+                  <li>Selfie upload + optional resume/photos.</li>
+                  <li>Baseline questionnaire that feeds a refinement question engine.</li>
+                  <li>Generated narrative, score, image, audio, and habit suggestions.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(event)">
+                <strong>Fun extensions</strong>
+                <span class="small muted">tarot, palm-reading vibes, randomization</span>
+              </div>
+              <div class="acc-body">
+                <p class="muted">Optional gimmicks like a playful 'palm reading' or tarot card layer for randomized prompts — explicitly labeled as for fun.</p>
+              </div>
+            </div>
+
+            <div class="acc-item">
+              <div class="acc-head" onclick="toggleAcc(event)">
+                <strong>Ethics & safety notes</strong>
+                <span class="small muted">privacy, bias, disclaimers</span>
+              </div>
+              <div class="acc-body">
+                <p class="muted">Clearly inform users the app is entertainment. Avoid any sensitive or diagnostic claims from images (no health, race inference, or predictions). Provide privacy controls for uploaded images/resumes and option to delete data.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- Right sidebar -->
+      <aside>
+        <div class="card" id="diagram" aria-labelledby="diagram-title">
+          <div class="section-title">
+            <h2 id="diagram-title">System Overview (flow)</h2>
+            <span class="muted">Front end → Backend Pipeline → GAITs → Outputs</span>
+          </div>
+
+          <div class="diagram-wrap" role="img" aria-label="System flow diagram">
+            <!-- Simple illustrative SVG flowchart -->
+            <svg class="flow" viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet">
+              <defs>
+                <linearGradient id="g1" x1="0" x2="1">
+                  <stop offset="0" stop-color="#7c5cff"/>
+                  <stop offset="1" stop-color="#5bd1ff"/>
+                </linearGradient>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000" flood-opacity="0.6"/>
+                </filter>
+              </defs>
+
+              <!-- Frontend -->
+              <rect x="20" y="30" rx="12" ry="12" width="220" height="120" fill="#071122" stroke="#0b2036"/>
+              <text x="30" y="60" fill="#9fb8d4" font-size="14" font-weight="700">Front End</text>
+              <text x="30" y="82" fill="#9aa7b5" font-size="12">Round 1: selfie, resume, baseline</text>
+              <text x="30" y="100" fill="#9aa7b5" font-size="12">Round 2: refining questions</text>
+
+              <!-- Backend -->
+              <rect x="320" y="20" rx="12" ry="12" width="360" height="240" fill="#07182a" stroke="#0b2036" filter="url(#shadow)"/>
+              <text x="340" y="48" fill="#cfe8ff" font-size="14" font-weight="700">Backend / Pipeline</text>
+              <text x="340" y="72" fill="#9aa7b5" font-size="12">Input handler • Resume extractor • Profile builder</text>
+              <text x="340" y="92" fill="#9aa7b5" font-size="12">Visual interpreter (vision)</text>
+              <text x="340" y="112" fill="#9aa7b5" font-size="12">Future generation engine</text>
+              <text x="340" y="132" fill="#9aa7b5" font-size="12">Improved-future loop</text>
+
+              <!-- GAITs -->
+              <rect x="320" y="290" rx="12" ry="12" width="360" height="120" fill="#051226" stroke="#0b2036"/>
+              <text x="340" y="320" fill="#cfe8ff" font-size="13" font-weight="700">GAITs</text>
+              <text x="340" y="340" fill="#9aa7b5" font-size="12">ChatGPT — language & vision</text>
+              <text x="340" y="360" fill="#9aa7b5" font-size="12">SDXL — image generation</text>
+              <text x="340" y="380" fill="#9aa7b5" font-size="12">ElevenLabs — audio</text>
+
+              <!-- Outputs -->
+              <rect x="720" y="40" rx="12" ry="12" width="240" height="180" fill="#071b24" stroke="#0b2036"/>
+              <text x="740" y="64" fill="#cfe8ff" font-size="14" font-weight="700">Outputs</text>
+              <text x="740" y="88" fill="#9aa7b5" font-size="12">Narrative + score</text>
+              <text x="740" y="106" fill="#9aa7b5" font-size="12">Future image</text>
+              <text x="740" y="124" fill="#9aa7b5" font-size="12">Audio narration</text>
+              <text x="740" y="142" fill="#9aa7b5" font-size="12">Habit suggestions & improved future</text>
+
+              <!-- Arrows -->
+              <defs>
+                <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 z" fill="#9aa7b5"/>
+                </marker>
+              </defs>
+
+              <line x1="240" y1="90" x2="320" y2="90" stroke="#7da8d9" stroke-width="2" marker-end="url(#arrow)"/>
+              <line x1="680" y1="140" x2="720" y2="140" stroke="#7da8d9" stroke-width="2" marker-end="url(#arrow)"/>
+              <line x1="500" y1="260" x2="500" y2="290" stroke="#7da8d9" stroke-width="2" marker-end="url(#arrow)"/>
+              <line x1="560" y1="410" x2="720" y2="210" stroke="#7da8d9" stroke-width="2" marker-end="url(#arrow)"/>
+
+              <!-- Score bar example -->
+              <rect x="740" y="170" rx="8" ry="8" width="180" height="12" fill="#0b1220" stroke="#072033"/>
+              <rect x="740" y="170" rx="8" ry="8" width="86" height="12" fill="url(#g1)"/>
+            </svg>
+          </div>
+
+          <p class="small muted" style="margin-top:10px">Diagram is illustrative; the pipeline contains separate modules (Refinement Question Engine, Profile Builder, Visual Interpreter, Future Generation, Image & Audio generators, and improved-future loop).</p>
+        </div>
+
+        <div class="card" style="margin-top:16px" aria-labelledby="quick-title">
+          <div class="section-title">
+            <h2 id="quick-title">Quick mock: future score</h2>
+            <span class="muted">visual example</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="small muted">Future quality score: <strong style="color:#dff">86 / 100</strong></div>
+            <div class="score-bar" aria-hidden="true"><div class="score-fill" style="width:86%"></div></div>
+            <div class="small muted">Drivers: health habits, career momentum, social engagement.</div>
+            <div style="margin-top:8px">
+              <button class="btn" onclick="alert('Generate improved future — placeholder')">Generate improved future</button>
+              <button class="btn" style="margin-left:6px" onclick="alert('Play narration — placeholder')">Play narration</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:16px" aria-labelledby="dev-notes">
+          <div class="section-title">
+            <h2 id="dev-notes">Developer notes</h2>
+            <span class="muted">implementation hints</span>
+          </div>
+          <ul class="muted" style="padding-left:18px">
+            <li>Backend endpoints: <span class="kbd">POST /api/upload</span>, <span class="kbd">POST /api/round2</span>, <span class="kbd">POST /api/generate</span>.</li>
+            <li>Use server-side resume text extraction (e.g., <span class="kbd">pdfplumber</span>) before sending to LLMs.</li>
+            <li>Keep user data storage optional; provide explicit deletion controls and clear disclaimers.</li>
+            <li>Score computation: keep transparent drivers; store as part of generated profile_structured.</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="muted">Designed for prototype & course submission. © See Your Future — entertainment & self-reflection — not prediction.</div>
+    </footer>
+  </div>
+
+  <script>
+    // Small helpers
+    function scrollToSection(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+
+    function toggleAcc(e){
+      const item = e.currentTarget.closest('.acc-item');
+      if(!item) return;
+      const body = item.querySelector('.acc-body');
+      body.classList.toggle('show');
+    }
+
+    // accessible keyboard support for accordions
+    document.querySelectorAll('.acc-head').forEach(head=>{
+      head.setAttribute('tabindex','0');
+      head.addEventListener('keydown', (ev)=>{
+        if(ev.key === 'Enter' || ev.key === ' '){
+          ev.preventDefault();
+          head.click();
+        }
+      });
+    });
+
+    // small demo: animate the score-fill (on load)
+    window.addEventListener('load', ()=>{
+      const fill = document.querySelector('.score-fill');
+      if(fill){
+        // animate from 0 to current width (already set inline)
+        fill.style.transition = 'width 900ms cubic-bezier(.2,.9,.2,1)';
+      }
+    });
+  </script>
+</body>
+</html>
